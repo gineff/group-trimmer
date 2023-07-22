@@ -4,15 +4,19 @@
   "description": "trim several video fragment with ffmpeg",
   "main": "dist/index.js",
   "scripts": {
-    "start": "ts-node index.js",
+    "start": "ts-node ./dist/index.js",
     "dev": "nodemon src/app.ts",
     "build": "rimraf dist && tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "group-trim": "./dist/index.js"
   },
   "author": "gineff <canone@inbox.ru>",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "20.4.4",
+    "@types/optimist": "0.0.30",
     "@typescript-eslint/eslint-plugin": "6.1.0",
     "@typescript-eslint/parser": "6.1.0",
     "eslint": "8.45.0",
@@ -23,5 +27,8 @@
     "prettier": "2.8.8",
     "ts-node": "10.9.1",
     "typescript": "5.1.6"
+  },
+  "dependencies": {
+    "optimist": "0.6.1"
   }
 }
