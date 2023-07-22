@@ -1,0 +1,27 @@
+{
+  "name": "group-trim",
+  "version": "1.0.0",
+  "description": "trim several video fragment with ffmpeg",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node index.js",
+    "dev": "nodemon src/app.ts",
+    "build": "rimraf dist && tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "gineff <canone@inbox.ru>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "20.4.4",
+    "@typescript-eslint/eslint-plugin": "6.1.0",
+    "@typescript-eslint/parser": "6.1.0",
+    "eslint": "8.45.0",
+    "eslint-config-prettier": "8.8.0",
+    "eslint-plugin-node": "11.1.0",
+    "eslint-plugin-prettier": "5.0.0",
+    "husky": "8.0.3",
+    "prettier": "2.8.8",
+    "ts-node": "10.9.1",
+    "typescript": "5.1.6"
+  }
+}
