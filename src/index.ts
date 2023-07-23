@@ -1,6 +1,8 @@
 import { mkdir } from 'node:fs/promises'
-import { spawn } from 'child_process'
+import { existsSync } from 'node:fs'
+import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import { resolve } from 'node:path'
 import optimist from 'optimist'
 
 const download = async (
@@ -11,23 +13,22 @@ const download = async (
 ) => {
   const [startTime, duration] = range
   const fileName = `${hash}-${startTime}-${duration}.mp4`
+  const filePath = resolve(path, fileName)
   //prettier-ignore
-  const ffmpegOptions = ['-ss',`${startTime}`,'-i',link,'-t',`${duration}`,'-c','copy','-y',`${path}/${fileName}`]
+  const ffmpegOptions = ['-ss',`${startTime}`,'-i',link,'-t',`${duration}`,'-c','copy','-y',filePath]
 
   return new Promise((resolve, _reject) => {
     const ffmpeg = spawn('ffmpeg', ffmpegOptions)
 
     ffmpeg.on('close', code => {
-      console.log(`child process exited with code ${code}`)
       resolve(code)
     })
 
-    ffmpeg.stderr.on('data', data => {
-      if (1) {
-        //if not quiet
-        console.error(`ps stderr: ${data}`)
-      }
-    })
+    if (!quiet) {
+      ffmpeg.stderr.on('data', data => {
+        console.error(`ffmpeg: ${data}`)
+      })
+    }
   })
 }
 
@@ -37,36 +38,40 @@ const getHash = (str: string) =>
 type Range = [startTime: number, duration: number]
 
 const parseSegments = (segment: string): Range => {
-  //format hh:mm:ss-duration
-  let match = segment.match(/(\d{2}):(\d{2}):(\d{2})-(\d+)/)
+  const segmentFormat = {
+    ['hh:mm:ss-duration']: /(\d{2}):(\d{2}):(\d{2})-(\d+)/,
+    ['startTime-duration']: /^(\d+)-(\d+)/,
+  }
+  const match = segment.match(segmentFormat['hh:mm:ss-duration'])
   if (match !== null) {
     const [_i, hrs, min, sec, duration] = Array.from(match, val => +val)
     return [(hrs * 60 + min) * 60 + sec, duration]
   }
-
-  //format startTime-duration
-  match = segment.trim().match(/^(\d+)-(\d+)/)
-  if (match !== null) {
-    return Array.from(match, val => +val).splice(1) as Range
+  if (segmentFormat['startTime-duration'].test(segment.trim())) {
+    return segment.split('-') as unknown as Range
   }
-
   return [0, 0]
 }
 
 //prettier-ignore
-var argv = optimist
+const argv = optimist
   .alias('i', 'input').describe('i', 'video source link')
   .alias('p', 'path').describe('p', 'change destination path').default('p', './tmp')
   .alias('q', 'quiet').describe('q', 'hide ffmpeg log').boolean('q').argv
+  .alias('d', 'downloads').describe('d', 'the number of concurrent downloads').default('d', 3)
+  .argv
 
 const link = argv.input
+const quiet = argv.quiet
 const hash = getHash(link)
 const ranges = argv._.map(parseSegments)
-console.log(ranges)
 
 const startProcess = async () => {
-  try {
+  if (!existsSync(argv.path)) {
     await mkdir(argv.path)
+  }
+
+  try {
     for (const range of ranges) {
       await download(link, range, argv.path, hash)
     }
