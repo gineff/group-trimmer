@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
-import optimist from 'optimist'
-import { createHash, makeDir } from 'utils'
+import { program } from 'commander'
+import { createHash, makeDir } from './utils'
 
 const download = async (
   link: string,
@@ -49,16 +49,26 @@ const parseSegments = (segment: string): Range => {
 }
 
 //prettier-ignore
-const argv = optimist
+/*const argv = optimist
   .alias('i', 'input').describe('i', 'video source link')
   .alias('p', 'path').describe('p', 'change destination path').default('p', './tmp')
   .alias('q', 'quiet').describe('q', 'hide ffmpeg log').boolean('q').argv
   .alias('d', 'downloads').describe('d', 'the number of concurrent downloads').default('d', 3)
-  .argv
+  .argv*/
 
+program
+  .option('-i, --input <input>', 'video source')
+  .option('-p, --path <path>', 'change destination path', './tmp')
+  .option('-q, --quiet', 'hide ffmpeg log')
+  .option('-d, --downloads <downloads>', 'the number of concurrent downloads', '3')
+  .parse(process.argv);
+
+const argv = program.opts()
+
+console.log('argv', program.args)
 const quiet = argv.quiet
 const hash = createHash(argv.input)
-const ranges = argv._.map(parseSegments)
+const ranges = program.args.map(parseSegments)
 
 const startProcess = async () => {
   await makeDir(argv.path)
