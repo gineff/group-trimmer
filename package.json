@@ -1,5 +1,5 @@
 {
-  "name": "group-trim",
+  "name": "group-trimer",
   "version": "1.0.0",
   "description": "trim several video fragment with ffmpeg",
   "main": "dist/index.js",

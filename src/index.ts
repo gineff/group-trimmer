@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
+import { EventEmitter } from 'node:events'
 import { program } from 'commander'
 import ini from 'ini'
 
@@ -19,7 +20,15 @@ type Progress = {
   status: string
 }
 
+enum Status {
+  idle,
+  running,
+  failed,
+  done,
+}
+
 class Trimmer {
+  status: Status = Status.idle
   ffmpegOptions: string[]
   progress = {} as Progress
   range: Range = [0, 0]
@@ -49,10 +58,12 @@ class Trimmer {
       const ffmpeg = spawn('ffmpeg', this.ffmpegOptions)
 
       ffmpeg.on('close', code => {
+        this.status = Status.done
         resolve(code)
       })
 
       ffmpeg.on('error', e => {
+        this.status = Status.failed
         reject(e)
       })
 
@@ -77,15 +88,28 @@ class Trimmer {
   }
   toString() {
     const width = 70
-    const value = Math.abs(this.progress.outTimeMs) / 1000000 || 0
-    const percentage = (value / this.range[1]) * 100
-    const progress = Math.round((width * percentage) / 100)
-    const progressText = '='.repeat(progress).padEnd(width, ' ')
-    return `[${progressText}] ${percentage.toFixed(2)}% \r\n`
+    let progressText = ''
+    let percentage = 0
+
+    try {
+      const value =
+        this.progress.outTimeMs > 0 ? this.progress.outTimeMs / 1000000 : 0
+      percentage = (value / this.range[1]) * 100
+      const progress = Math.round((width * percentage) / 100)
+      progressText = '='.repeat(progress).padEnd(width, ' ')
+    } catch (e) {
+      console.log(e)
+    }
+
+    return `[${progressText}] | ${(
+      this.range[0] +
+      '-' +
+      this.range[1]
+    ).padStart(7, ' ')} | ${percentage.toFixed(2)}% \r\n`
   }
 }
 
-class Monitor {
+class Monitor extends EventEmitter {
   observed: Trimmer[] = []
   watch = (part: Trimmer) => {
     const observer = new Proxy(part, {
@@ -101,6 +125,7 @@ class Monitor {
   }
   render = () => {
     process.stdout.write('\x1Bc\r' + this.observed.join(''))
+    //process.stdout.write(this.observed.join(''))
   }
 }
 
@@ -138,34 +163,39 @@ const argv = program.opts()
 const quiet = argv.quiet
 const hash = createHash(argv.input)
 const ranges = program.args.map(parseSegments)
-
 const monitor = new Monitor()
 
 const startProcess = async () => {
-  const parts: Trimmer[] = []
+  const trimmers: Trimmer[] = []
   await makeDir(argv.path)
 
   try {
-    for (const range of ranges) {
-      const part = new Trimmer({
+    
+    for (const [index, range] of ranges.entries()) {
+      const trimmer = new Trimmer({
         link: argv.input,
         range,
         catalog: argv.path,
         hash,
       })
-      const proxy = monitor.watch(part)
-      parts.push(proxy)
+      const proxy = monitor.watch(trimmer)
+      trimmers.push(proxy)
+
+      if(index < argv.streams) {
+        trimmer.read()
+      }
     }
 
-    while (parts.length) {
-      const promises: Promise<unknown>[] = []
-      const streams = parts.splice(0, argv.streams)
+    monitor.on('done', () => {
+      const trimmer = trimmers.find(trim => trim.status === Status.idle)
+      if(trimmer) {
+        trimmer.read()  
+      }else{
+        console.log('all done')
+        process.exit()
+      }
+    })
 
-      streams.forEach(stream => {
-        promises.push(stream.read())
-      })
-      await Promise.all(promises)
-    }
   } catch (e) {
     console.log('error', e)
   }
@@ -175,3 +205,7 @@ startProcess()
 
 //ToDo fileMask
 //ToDo тоже самое расширение файла
+//прогресс бар останавливается на 99.99
+//при загрузке торрента занчение процентов то ++ то --
+//последовательность конвертации
+//загружает несколько файлов и останавливается
