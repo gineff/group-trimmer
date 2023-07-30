@@ -56,14 +56,27 @@ class Trimmer {
   read() {
     return new Promise((resolve, reject) => {
       const ffmpeg = spawn('ffmpeg', this.ffmpegOptions)
+      let updated = false
+
+      const id = setInterval(() => {
+        if (updated) {
+          return (updated = false)
+        } else {
+          ffmpeg.kill()
+          this.status = Status.idle
+          return false
+        }
+      }, 60.0)
 
       ffmpeg.on('close', code => {
         this.status = Status.done
+        clearInterval(id)
         resolve(code)
       })
 
       ffmpeg.on('error', e => {
         this.status = Status.failed
+        clearInterval(id)
         reject(e)
       })
 
@@ -71,6 +84,7 @@ class Trimmer {
         const { bitrate, total_size, out_time_ms, progress } = ini.decode(
           data.toString()
         )
+        updated = true
         this.progress = {
           bitrate,
           status: progress,
@@ -111,21 +125,32 @@ class Trimmer {
 
 class Monitor extends EventEmitter {
   observed: Trimmer[] = []
-  watch = (part: Trimmer) => {
-    const observer = new Proxy(part, {
-      set: (target, prop, val) => {
-        //@ts-ignore
-        target[prop] = val
-        this.render()
-        return true
-      },
+  streamsCount?: number
+  observe (trimmers: Trimmer[]) {
+    trimmers.forEach(trimmer => {
+      const observer = new Proxy(trimmer, {
+        set: (target: Trimmer, prop: keyof Trimmer, val) => {
+          target[prop] = val
+          if (prop === 'status') {
+            this.emit('change', val)
+          } else {
+            this.render()
+          }
+          return true
+        },
+      })
+      this.observed.push(observer)
     })
-    this.observed.push(observer)
-    return observer
+    return this
+  }
+  run(streams: number) {
+    this.streamsCount = streams
+    for(let i=0; i < this.streamsCount; i++ ){
+      this.observed[i]?.read()
+    }
   }
   render = () => {
     process.stdout.write('\x1Bc\r' + this.observed.join(''))
-    //process.stdout.write(this.observed.join(''))
   }
 }
 
@@ -169,36 +194,16 @@ const startProcess = async () => {
   const trimmers: Trimmer[] = []
   await makeDir(argv.path)
 
-  try {
-    
-    for (const [index, range] of ranges.entries()) {
-      const trimmer = new Trimmer({
-        link: argv.input,
-        range,
-        catalog: argv.path,
-        hash,
-      })
-      const proxy = monitor.watch(trimmer)
-      trimmers.push(proxy)
-
-      if(index < argv.streams) {
-        trimmer.read()
-      }
-    }
-
-    monitor.on('done', () => {
-      const trimmer = trimmers.find(trim => trim.status === Status.idle)
-      if(trimmer) {
-        trimmer.read()  
-      }else{
-        console.log('all done')
-        process.exit()
-      }
+  for (const range of ranges) {
+    const trimmer = new Trimmer({
+      link: argv.input,
+      range,
+      catalog: argv.path,
+      hash,
     })
-
-  } catch (e) {
-    console.log('error', e)
-  }
+    trimmers.push(trimmer)
+  }  
+  monitor.observe(trimmers).run(argv.streams)
 }
 
 startProcess()
