@@ -29,6 +29,7 @@ enum Status {
 
 class Trimmer {
   status: Status = Status.idle
+  retries = 3
   ffmpegOptions: string[]
   progress = {} as Progress
   range: Range = [0, 0]
@@ -55,6 +56,7 @@ class Trimmer {
   }
   read() {
     return new Promise((resolve, reject) => {
+      this.status = Status.running
       const ffmpeg = spawn('ffmpeg', this.ffmpegOptions)
       let updated = false
 
@@ -63,10 +65,11 @@ class Trimmer {
           return (updated = false)
         } else {
           ffmpeg.kill()
+          this.retries -= 1
           this.status = Status.idle
           return false
         }
-      }, 60.0)
+      }, 10000)
 
       ffmpeg.on('close', code => {
         this.status = Status.done
@@ -126,26 +129,35 @@ class Trimmer {
 class Monitor extends EventEmitter {
   observed: Trimmer[] = []
   streamsCount?: number
-  observe (trimmers: Trimmer[]) {
-    trimmers.forEach(trimmer => {
-      const observer = new Proxy(trimmer, {
+  observe(trimmers: Trimmer[]) {
+    this.observed = trimmers.map(trimmer => {
+      return new Proxy(trimmer, {
         set: (target: Trimmer, prop: keyof Trimmer, val) => {
           target[prop] = val
-          if (prop === 'status') {
-            this.emit('change', val)
+          if (prop === 'status' && val !== Status.running) {
+            this.run()
           } else {
             this.render()
           }
           return true
         },
       })
-      this.observed.push(observer)
     })
     return this
   }
-  run(streams: number) {
+  run() {
+    const observer = this.observed.find(
+      item => item.status === Status.idle && item.retries > 0
+    )
+    if (observer) {
+      observer.read()
+    } else {
+      //process.exit()
+    }
+  }
+  start(streams: number) {
     this.streamsCount = streams
-    for(let i=0; i < this.streamsCount; i++ ){
+    for (let i = 0; i < this.streamsCount; i++) {
       this.observed[i]?.read()
     }
   }
@@ -202,8 +214,8 @@ const startProcess = async () => {
       hash,
     })
     trimmers.push(trimmer)
-  }  
-  monitor.observe(trimmers).run(argv.streams)
+  }
+  monitor.observe(trimmers).start(argv.streams)
 }
 
 startProcess()
