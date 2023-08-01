@@ -1,6 +1,6 @@
 {
-  "name": "group-trimer",
-  "version": "1.0.0",
+  "name": "@ffmpeg-kit/group-trimer",
+  "version": "1.0.1",
   "description": "trim several video fragment with ffmpeg",
   "main": "dist/index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "group-trim": "./dist/index.js"
+    "group-trimer": "dist/index.js"
   },
   "author": "gineff <canone@inbox.ru>",
   "license": "MIT",
@@ -32,5 +32,21 @@
   "dependencies": {
     "commander": "11.0.0",
     "ini": "4.1.1"
-  }
+  },
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gineff/group-trimer.git"
+  },
+  "keywords": [
+    "ffmpeg",
+    "ffmpeg-kit",
+    "trim",
+    "trimmer",
+    "video"
+  ],
+  "bugs": {
+    "url": "https://github.com/gineff/group-trimer/issues"
+  },
+  "homepage": "https://github.com/gineff/group-trimer#readme"
 }

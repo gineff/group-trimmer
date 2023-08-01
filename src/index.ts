@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
 import { EventEmitter } from 'node:events'
@@ -11,6 +13,7 @@ type TrimmerProps = {
   range: Range
   hash: string
   catalog: string
+  retries: number
 }
 
 type Progress = {
@@ -33,9 +36,10 @@ class Trimmer {
   ffmpegOptions: string[]
   progress = {} as Progress
   range: Range = [0, 0]
-  constructor({ link, range, catalog, hash }: TrimmerProps) {
+  constructor({ link, range, catalog, hash, retries }: TrimmerProps) {
     const [startTime, duration] = range
     this.range = range
+    this.retries = retries
     const fileName = `${hash}-${startTime}-${duration}.mp4`
     const filePath = resolve(catalog, fileName)
 
@@ -69,7 +73,7 @@ class Trimmer {
           this.status = Status.idle
           return false
         }
-      }, 10000)
+      }, argv.timeout * 1000)
 
       ffmpeg.on('close', code => {
         this.status = Status.done
@@ -188,6 +192,8 @@ program
   .option('-i, --input <input>', 'video source')
   .option('-p, --path <path>', 'change destination path', './tmp')
   .option('-q, --quiet', 'hide ffmpeg log')
+  .option('-t, --timeout', 'timeout in sec. for trim process', '30')
+  .option('-r, --retries', 'number of retries for trim process', '15')
   .option(
     '-s, --streams <streams>',
     'the number of concurrent trim streams',
@@ -212,6 +218,7 @@ const startProcess = async () => {
       range,
       catalog: argv.path,
       hash,
+      retries: Number(argv.retries),
     })
     trimmers.push(trimmer)
   }
@@ -219,10 +226,3 @@ const startProcess = async () => {
 }
 
 startProcess()
-
-//ToDo fileMask
-//ToDo тоже самое расширение файла
-//прогресс бар останавливается на 99.99
-//при загрузке торрента занчение процентов то ++ то --
-//последовательность конвертации
-//загружает несколько файлов и останавливается
