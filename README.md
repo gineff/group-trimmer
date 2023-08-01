@@ -3,6 +3,7 @@
 ### install global
 
 npm i -g @ffmpeg-kit/group-trimer
+
 yarn global add @ffmpeg-kit/group-trimer
 
 ### command
