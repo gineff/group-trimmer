@@ -8,6 +8,7 @@ const node_child_process_1 = require("node:child_process");
 const node_path_1 = require("node:path");
 const node_events_1 = require("node:events");
 const commander_1 = require("commander");
+const ffmpeg_static_1 = __importDefault(require("ffmpeg-static"));
 const ini_1 = __importDefault(require("ini"));
 const utils_1 = require("./utils");
 var Status;
@@ -47,7 +48,7 @@ class Trimmer {
     read() {
         return new Promise((resolve, reject) => {
             this.status = Status.running;
-            const ffmpeg = (0, node_child_process_1.spawn)('ffmpeg', this.ffmpegOptions);
+            const ffmpeg = (0, node_child_process_1.spawn)(ffmpeg_static_1.default, this.ffmpegOptions);
             let updated = false;
             const id = setInterval(() => {
                 if (updated) {
@@ -80,7 +81,7 @@ class Trimmer {
                     outTimeMs: out_time_ms,
                 };
             });
-            if (!quiet) {
+            if (argv.log) {
                 ffmpeg.stderr.on('data', data => {
                     console.error(`ffmpeg: ${data}`);
                 });
@@ -161,13 +162,12 @@ const parseSegments = (segment) => {
 commander_1.program
     .option('-i, --input <input>', 'video source')
     .option('-p, --path <path>', 'change destination path', './tmp')
-    .option('-q, --quiet', 'hide ffmpeg log')
-    .option('-t, --timeout', 'timeout in sec. for trim process', '30')
-    .option('-r, --retries', 'number of retries for trim process', '15')
+    .option('-l, --log <log>', 'display ffmpeg log')
+    .option('-t, --timeout <timeout>', 'timeout in sec. for trim process', '30')
+    .option('-r, --retries <retries>', 'number of retries for trim process', '15')
     .option('-s, --streams <streams>', 'the number of concurrent trim streams', '3')
     .parse(process.argv);
 const argv = commander_1.program.opts();
-const quiet = argv.quiet;
 const hash = (0, utils_1.createHash)(argv.input);
 const ranges = commander_1.program.args.map(parseSegments);
 const monitor = new Monitor();

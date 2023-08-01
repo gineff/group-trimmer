@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
 import { EventEmitter } from 'node:events'
 import { program } from 'commander'
+import pathToFfmpeg from 'ffmpeg-static'
 import ini from 'ini'
 
 import { createHash, makeDir } from './utils'
@@ -61,7 +62,7 @@ class Trimmer {
   read() {
     return new Promise((resolve, reject) => {
       this.status = Status.running
-      const ffmpeg = spawn('ffmpeg', this.ffmpegOptions)
+      const ffmpeg = spawn(pathToFfmpeg!, this.ffmpegOptions)
       let updated = false
 
       const id = setInterval(() => {
@@ -100,7 +101,7 @@ class Trimmer {
         }
       })
 
-      if (!quiet) {
+      if (argv.log) {
         ffmpeg.stderr.on('data', data => {
           console.error(`ffmpeg: ${data}`)
         })
@@ -191,9 +192,9 @@ const parseSegments = (segment: string): Range => {
 program
   .option('-i, --input <input>', 'video source')
   .option('-p, --path <path>', 'change destination path', './tmp')
-  .option('-q, --quiet', 'hide ffmpeg log')
-  .option('-t, --timeout', 'timeout in sec. for trim process', '30')
-  .option('-r, --retries', 'number of retries for trim process', '15')
+  .option('-l, --log <log>', 'display ffmpeg log')
+  .option('-t, --timeout <timeout>', 'timeout in sec. for trim process', '30')
+  .option('-r, --retries <retries>', 'number of retries for trim process', '15')
   .option(
     '-s, --streams <streams>',
     'the number of concurrent trim streams',
@@ -202,8 +203,6 @@ program
   .parse(process.argv)
 
 const argv = program.opts()
-
-const quiet = argv.quiet
 const hash = createHash(argv.input)
 const ranges = program.args.map(parseSegments)
 const monitor = new Monitor()
