@@ -26,9 +26,10 @@ class Trimmer {
     range = [0, 0];
     constructor({ link, range, catalog, hash, retries }) {
         const [startTime, duration] = range;
+        const ext = (0, utils_1.getFileExtension)(link);
         this.range = range;
         this.retries = retries;
-        const fileName = `${hash}-${startTime}-${duration}.mp4`;
+        const fileName = `${hash}-${startTime}-${duration}.${ext}`;
         const filePath = (0, node_path_1.resolve)(catalog, fileName);
         this.ffmpegOptions = [
             '-ss',
