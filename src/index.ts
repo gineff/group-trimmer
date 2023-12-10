@@ -7,7 +7,7 @@ import { program } from 'commander'
 import pathToFfmpeg from 'ffmpeg-static'
 import ini from 'ini'
 
-import { createHash, makeDir } from './utils'
+import { createHash, getFileExtension, makeDir } from './utils'
 
 type TrimmerProps = {
   link: string
@@ -39,9 +39,10 @@ class Trimmer {
   range: Range = [0, 0]
   constructor({ link, range, catalog, hash, retries }: TrimmerProps) {
     const [startTime, duration] = range
+    const ext = getFileExtension(link)
     this.range = range
     this.retries = retries
-    const fileName = `${hash}-${startTime}-${duration}.mp4`
+    const fileName = `${hash}-${startTime}-${duration}.${ext}`
     const filePath = resolve(catalog, fileName)
 
     this.ffmpegOptions = [

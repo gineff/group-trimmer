@@ -1,6 +1,6 @@
 {
   "name": "@ffmpeg-kit/group-trimer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "trim several video fragment with ffmpeg",
   "main": "dist/index.js",
   "scripts": {
