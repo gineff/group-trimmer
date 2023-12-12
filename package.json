@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "group-trimmer": "src/index.js"
+    "ffmpeg-kit-trimmer": "src/index.js"
   },
   "author": "gineff <canone@inbox.ru>",
   "license": "MIT",
