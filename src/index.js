@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { program } from 'commander'
-import { resolve } from 'node:path'
-import { createHash, getFileName, makeDir } from './utils/index.js'
+import { resolve, basename, extname } from 'node:path'
+import { createHash, makeDir, isTorrent, createTorrentServer } from './utils/index.js'
 import { Trimmer } from './trimmer.js'
 import { Monitor } from './monitor.js'
 import { Controller } from './controller.js'
@@ -13,15 +13,15 @@ program
   .option('-l, --log', 'display ffmpeg log', false)
   .option('-t, --timeout <timeout>', 'timeout in sec. for trim process', '60')
   .option('-r, --retries <retries>', 'number of retries for trim process', '10')
+  .option('-c, --check', 'verify torrent', false)
   .option('-s,--streams <streams>', 'the number of concurrent streams', '3')
   .parse(process.argv)
 
 const trimmers = []
-const { input, path, timeout, retries, streams, log } = program.opts()
+const { input, path, timeout, retries, streams, log, check } = program.opts()
 const ranges = program.args.map(parseSegments)
 
-const makeOutput = async (input, range, path) => {
-  const fileName = await getFileName(input)
+const makeOutput = (fileName, range, path) => {
   const hash = createHash(fileName)
   const [startTime, duration] = range
   const ext = fileName.split('.').at(-1) ?? 'mp4'
@@ -44,20 +44,21 @@ function parseSegments(segment) {
   return [0, 0]
 }
 
-const startProcess = async () => {
-  await makeDir(path)
-  for (const range of ranges) {
-    trimmers.push(
-      new Trimmer({
-        input,
-        range,
-        output: await makeOutput(input, range, path),
-        log,
-      })
-    )
-  }
-  new Monitor(trimmers)
-  new Controller({ trimmers, retries, concurrentStreams: streams, timeout })
-}
 
-startProcess()
+await makeDir(path)
+const [torrentInput, torrentName] = isTorrent(input) ? await createTorrentServer(input, {verify: check}) : []
+const currentInput = torrentInput || input
+const fileName = torrentName || basename(currentInput);
+
+for (const range of ranges) {
+  trimmers.push(
+    new Trimmer({
+      input: currentInput,
+      range,
+      output: makeOutput(fileName, range, path),
+      log,
+    })
+  )
+}
+new Monitor(trimmers)
+new Controller({ trimmers, retries, concurrentStreams: streams, timeout })

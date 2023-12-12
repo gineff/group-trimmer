@@ -5,21 +5,20 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
+    'plugin:node/recommended',
     'plugin:prettier/recommended',
-    'plugin:@typescript-eslint/recommended',
+    'prettier',
   ],
   overrides: [],
-  parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
   plugins: [
     'prettier',
-    '@typescript-eslint',
   ],
   rules: {
     'prettier/prettier': 'warn',
-    '@typescript-eslint/ban-ts-comment': 1,
+    
   },
 }

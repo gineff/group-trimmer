@@ -28,11 +28,13 @@ export class Trimmer extends EventEmitter {
     ]
   }
   trim() {
-    const ffmpeg = spawn(pathToFfmpeg, this.ffmpegOptions)
+
+    const ffmpeg = spawn('ffmpeg', this.ffmpegOptions)
     this.ffmpeg = ffmpeg
 
     ffmpeg.on('close', code => {
-      this.emit('close', code)
+      console.log('close', code)
+       this.emit('close', code)
     })
 
     ffmpeg.on('error', e => {

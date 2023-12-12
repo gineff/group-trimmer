@@ -3,7 +3,7 @@ class Wrapper {
     this.trimmer = trimmer
   }
   toString() {
-    const { outTimeMs } = this.trimmer.data
+    const { outTimeMs } = this.trimmer.data || {}
     const [startTime, duration] = this.trimmer.range
     const width = 70
     let progressText = ''

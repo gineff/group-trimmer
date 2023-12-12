@@ -7,7 +7,6 @@ export const getFileName = async filePath => {
     const { stdout, stderr } = await promisifiedExec(
       `ffprobe -v error -select_streams v:0 -show_entries format=filename -of default=noprint_wrappers=1:nokey=1 "${filePath}"`,
     )
-
     if (stderr) {
       throw new Error(stderr)
     }
