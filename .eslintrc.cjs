@@ -14,11 +14,9 @@ module.exports = {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
-  plugins: [
-    'prettier',
-  ],
+  plugins: ['prettier'],
   rules: {
     'prettier/prettier': 'warn',
-    
+    'no-unused-vars': 'warn',
   },
 }
