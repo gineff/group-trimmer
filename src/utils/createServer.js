@@ -3,8 +3,7 @@ import rangeParser from 'range-parser'
 import express from 'express'
 import cors from 'cors'
 
-export const createServer = async file => {
-  
+export const createServer = async (file) => {
   const app = express()
   app.use(express.json())
   app.use(cors())
@@ -12,7 +11,10 @@ export const createServer = async file => {
   app.get('/', (request, response) => {
     response.setHeader('Accept-Ranges', 'bytes')
     response.setHeader('Content-Type', mime.getType(file.name) || 'text/plain')
-    response.setHeader('Content-Disposition', `attachment;filename="${file.name}"`)
+    response.setHeader(
+      'Content-Disposition',
+      `attachment;filename="${file.name}"`,
+    )
 
     const range = request.headers.range
 
@@ -28,7 +30,7 @@ export const createServer = async file => {
         response.statusCode = 206
         response.setHeader(
           'Content-Length',
-          parsedRange.end - parsedRange.start + 1
+          parsedRange.end - parsedRange.start + 1,
         )
         response.setHeader(
           'Content-Range',
@@ -37,7 +39,7 @@ export const createServer = async file => {
             '-' +
             parsedRange.end +
             '/' +
-            file.length
+            file.length,
         )
         if (request.method === 'HEAD') return response.end()
         const readStream = file.createReadStream(parsedRange)

@@ -9,7 +9,7 @@ export const parseTorrent = async (input) => {
   } catch (error) {
     console.error(
       'Ошибка при чтении или парсинге торрент-файла или магнет-ссылки:',
-      error.message
+      error.message,
     )
     return null
   }

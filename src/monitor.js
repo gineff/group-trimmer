@@ -1,4 +1,4 @@
-class Wrapper {
+export class Wrapper {
   constructor(trimmer) {
     this.trimmer = trimmer
   }
@@ -20,7 +20,7 @@ class Wrapper {
 
     return `[${progressText}] | ${(startTime + '-' + duration).padStart(
       7,
-      ' '
+      ' ',
     )} | ${Math.min(percentage.toFixed(2), 100.0)}% \r\n`
   }
 }
@@ -28,7 +28,7 @@ class Wrapper {
 export class Monitor {
   results = []
   constructor(trimmers) {
-    trimmers.forEach(trimmer => {
+    trimmers.forEach((trimmer) => {
       this.results.push(new Wrapper(trimmer))
       trimmer.on('data', this.render)
     })

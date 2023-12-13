@@ -1,5 +1,4 @@
 import ini from 'ini'
-import pathToFfmpeg from 'ffmpeg-static'
 import { spawn } from 'node:child_process'
 import { EventEmitter } from 'node:events'
 
@@ -27,27 +26,24 @@ export class Trimmer extends EventEmitter {
       output,
     ]
   }
-  trim() {
-
+  start() {
     const ffmpeg = spawn('ffmpeg', this.ffmpegOptions)
     this.ffmpeg = ffmpeg
 
-    ffmpeg.on('close', code => {
-      console.log('close', code)
-       this.emit('close', code)
+    ffmpeg.on('close', (code) => {
+      this.emit('close', code)
     })
 
-    ffmpeg.on('error', e => {
+    ffmpeg.on('error', (e) => {
       this.emit('error', e)
-      console.log('error', e)
     })
 
     this.log &&
-      ffmpeg.stderr.on('data', data => {
+      ffmpeg.stderr.on('data', (data) => {
         console.error(`ffmpeg: ${data}`)
       })
 
-    ffmpeg.stdout.on('data', data => {
+    ffmpeg.stdout.on('data', (data) => {
       const {
         bitrate,
         total_size: totalSize,
@@ -64,6 +60,6 @@ export class Trimmer extends EventEmitter {
   }
   restart() {
     this.stop()
-    this.trim()
+    this.start()
   }
 }
