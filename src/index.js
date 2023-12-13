@@ -2,7 +2,12 @@
 
 import { program } from 'commander'
 import { resolve, basename, extname } from 'node:path'
-import { createHash, makeDir, isTorrent, createTorrentServer } from './utils/index.js'
+import {
+  createHash,
+  makeDir,
+  checkIsTorrent,
+  createTorrentServer,
+} from './utils/index.js'
 import { Trimmer } from './trimmer.js'
 import { Monitor } from './monitor.js'
 import { Controller } from './controller.js'
@@ -24,8 +29,8 @@ const ranges = program.args.map(parseSegments)
 const makeOutput = (fileName, range, path) => {
   const hash = createHash(fileName)
   const [startTime, duration] = range
-  const ext = fileName.split('.').at(-1) ?? 'mp4'
-  return resolve(path, `${hash}-${startTime}-${duration}.${ext}`)
+  const ext = extname(fileName) ?? '.mp4'
+  return resolve(path, `${hash}-${startTime}-${duration}${ext}`)
 }
 
 function parseSegments(segment) {
@@ -35,7 +40,7 @@ function parseSegments(segment) {
   }
   const match = segment.match(segmentFormat['hh:mm:ss-duration'])
   if (match !== null) {
-    const [_i, hrs, min, sec, duration] = Array.from(match, val => +val)
+    const [, hrs, min, sec, duration] = Array.from(match, (val) => +val)
     return [(hrs * 60 + min) * 60 + sec, duration]
   }
   if (segmentFormat['startTime-duration'].test(segment.trim())) {
@@ -44,11 +49,13 @@ function parseSegments(segment) {
   return [0, 0]
 }
 
-
 await makeDir(path)
-const [torrentInput, torrentName] = isTorrent(input) ? await createTorrentServer(input, {verify: check}) : []
-const currentInput = torrentInput || input
-const fileName = torrentName || basename(currentInput);
+const isTorrent = checkIsTorrent(input)
+const { torrentFileName, host, port } = isTorrent
+  ? await createTorrentServer(input, { verify: check })
+  : {}
+const currentInput = isTorrent ? `${host}:${port}` : input
+const fileName = torrentFileName || basename(currentInput)
 
 for (const range of ranges) {
   trimmers.push(
@@ -57,7 +64,7 @@ for (const range of ranges) {
       range,
       output: makeOutput(fileName, range, path),
       log,
-    })
+    }),
   )
 }
 new Monitor(trimmers)
