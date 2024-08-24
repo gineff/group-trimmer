@@ -1,7 +1,7 @@
 import { Countdown } from './countdown.js'
 
 export class Controller {
-  constructor({ trimmers, retries = 30, concurrentStreams, timeout = 60 }) {
+  constructor({ trimmers, retries = 30, concurrentStreams, timeout = 30 }) {
     this.total = trimmers.length
     this.trimmers = trimmers
     this.timeout = timeout
@@ -17,29 +17,36 @@ export class Controller {
       this.handleError({ trimmer, retries, countdown }),
     )
 
-    trimmer.on('close', () => this.handleClose(countdown))
+    trimmer.on('close', (closeCode) => {
+      if (closeCode === 0) {
+        this.handleClose(countdown)
+      }
+    })
     trimmer.on('error', () => this.handleError({ trimmer, retries, countdown }))
     trimmer.on('data', (data) => this.handleData({ countdown, data }))
 
     trimmer.start()
+    countdown.start()
   }
   handleClose(countdown) {
+    countdown.stop()
     countdown.removeAllListeners()
     this.total--
-
-    if (this.trimmers.length) {
+    if (this.trimmers.length > 0) {
       this.startTrimmer(this.trimmers.shift())
     } else if (!this.total) {
       // eslint-disable-next-line no-process-exit
-      process.exit(1)
+      process.exit(0)
     }
   }
   handleError({ trimmer, retries, countdown }) {
-    countdown.removeAllListeners()
+    console.log('ERROR')
     retries--
-    trimmer.stop()
     if (retries > 0) {
-      this.startTrimmer(trimmer, retries)
+      trimmer.restart()
+      countdown.reset()
+    } else {
+      this.handleClose(countdown)
     }
   }
   handleData({ countdown }) {

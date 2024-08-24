@@ -56,7 +56,6 @@ export class Trimmer extends EventEmitter {
   }
   stop() {
     this.ffmpeg.kill()
-    this.removeAllListeners()
   }
   restart() {
     this.stop()

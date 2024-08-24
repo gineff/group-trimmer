@@ -16,7 +16,7 @@ program
   .option('-i, --input <input>', 'video source')
   .option('-p, --path <path>', 'change destination path', './tmp')
   .option('-l, --log', 'display ffmpeg log', false)
-  .option('-t, --timeout <timeout>', 'timeout in sec. for trim process', '60')
+  .option('-t, --timeout <timeout>', 'timeout in sec. for trim process', '30')
   .option('-r, --retries <retries>', 'number of retries for trim process', '10')
   .option('-c, --check', 'verify torrent', false)
   .option('-s,--streams <streams>', 'the number of concurrent streams', '3')

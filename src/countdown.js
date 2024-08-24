@@ -3,8 +3,8 @@ import { EventEmitter } from 'node:events'
 export class Countdown extends EventEmitter {
   constructor(initialTime) {
     super()
-    this.initialTime = initialTime
-    this.rest = initialTime
+    this.initialTime = +initialTime
+    this.rest = +initialTime
     this.timerId = null
   }
 
@@ -26,7 +26,7 @@ export class Countdown extends EventEmitter {
 
   reset() {
     this.stop()
-    this.rest = this.initialTim
+    this.rest = this.initialTime
     this.start()
   }
 }
