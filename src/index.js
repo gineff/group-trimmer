@@ -20,7 +20,7 @@ program
   .option('-l, --log', 'display ffmpeg log', false)
   .option('-t, --timeout <timeout>', 'timeout in sec. for trim process', '30')
   .option('-r, --retries <retries>', 'number of retries for trim process', '10')
-  .option('-c, --check', 'verify torrent', false)
+  .option('-c, --check', 'verify torrent', true)
   .option('-s,--streams <streams>', 'the number of concurrent streams', '3')
   .parse(process.argv)
 
