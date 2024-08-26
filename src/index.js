@@ -15,6 +15,8 @@ import { Controller } from './controller.js'
 program
   .option('-i, --input <input>', 'video source')
   .option('-p, --path <path>', 'change destination path', './tmp')
+  .option('-P, --port <port>', 'torrent server port', '8888')
+  .option('-b, --buffer <buffer>', 'buffer file path')
   .option('-l, --log', 'display ffmpeg log', false)
   .option('-t, --timeout <timeout>', 'timeout in sec. for trim process', '30')
   .option('-r, --retries <retries>', 'number of retries for trim process', '10')
@@ -23,7 +25,17 @@ program
   .parse(process.argv)
 
 const trimmers = []
-const { input, path, timeout, retries, streams, log, check } = program.opts()
+const {
+  input,
+  path,
+  timeout,
+  retries,
+  streams,
+  log,
+  check,
+  buffer,
+  port: defaultPort,
+} = program.opts()
 const ranges = program.args.map(parseSegments)
 
 const makeOutput = (fileName, range, path) => {
@@ -52,8 +64,9 @@ function parseSegments(segment) {
 await makeDir(path)
 const isTorrent = checkIsTorrent(input)
 const { torrentFileName, host, port } = isTorrent
-  ? await createTorrentServer(input, { verify: check })
+  ? await createTorrentServer(input, { verify: check, buffer, defaultPort })
   : {}
+
 const currentInput = isTorrent ? `${host}:${port}` : input
 const fileName = torrentFileName || basename(currentInput)
 

@@ -40,7 +40,6 @@ export class Controller {
     }
   }
   handleError({ trimmer, retries, countdown }) {
-    console.log('ERROR')
     retries--
     if (retries > 0) {
       trimmer.restart()

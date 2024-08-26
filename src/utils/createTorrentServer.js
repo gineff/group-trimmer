@@ -4,25 +4,29 @@ import {
   createTorrentEngine,
   createServer,
 } from './index.js'
-import config from '../config.js'
+import getPort from 'get-port'
 
 export const createTorrentServer = async (
   torrentSource,
-  { verify } = { verify: true },
+  { verify, buffer, defaultPort } = { verify: true, defaultPort: 8888 },
 ) => {
   const torrent = await parseTorrent(torrentSource)
   const fileIndex = await selectFile(torrent?.files)
-  const engine = createTorrentEngine(torrent, { verify })
+  const engine = createTorrentEngine(torrent, { verify, buffer })
   const file = engine.files[fileIndex]
   const server = await createServer(file)
 
   return new Promise((resolve) => {
     engine.on('ready', async () => {
-      server.listen(config.port)
+      const port = await getPort({
+        port: +defaultPort,
+      })
+
+      server.listen(port)
       resolve({
         instance: server,
         host: 'http://localhost',
-        port: config.port,
+        port: port,
         torrentFileName: file.name,
       })
     })
