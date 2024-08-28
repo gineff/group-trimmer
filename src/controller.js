@@ -22,7 +22,9 @@ export class Controller {
         this.handleClose(countdown)
       }
     })
-    trimmer.on('error', () => this.handleError({ trimmer, retries, countdown }))
+    trimmer.on('error', (error) =>
+      this.handleError({ trimmer, retries, countdown, error }),
+    )
     trimmer.on('data', (data) => this.handleData({ countdown, data }))
 
     trimmer.start()
@@ -39,7 +41,10 @@ export class Controller {
       process.exit(0)
     }
   }
-  handleError({ trimmer, retries, countdown }) {
+  handleError({ trimmer, retries, countdown, error }) {
+    if (error) {
+      console.error(error)
+    }
     retries--
     if (retries > 0) {
       trimmer.restart()
