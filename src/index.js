@@ -7,6 +7,7 @@ import {
   makeDir,
   checkIsTorrent,
   createTorrentServer,
+  checkAccess,
 } from './utils/index.js'
 import { Trimmer } from './trimmer.js'
 import { Monitor } from './monitor.js'
@@ -36,6 +37,11 @@ const {
   buffer,
   port: defaultPort,
 } = program.opts()
+
+const __dirname = process.cwd()
+const destinationPath = await checkAccess(resolve(__dirname, path))
+const inputPath = await checkAccess(resolve(__dirname, input))
+const bufferPath = buffer && (await checkAccess(resolve(__dirname, buffer)))
 const ranges = program.args.map(parseSegments)
 
 const makeOutput = (fileName, range, path) => {
@@ -61,13 +67,17 @@ function parseSegments(segment) {
   return [0, 0]
 }
 
-await makeDir(path)
-const isTorrent = checkIsTorrent(input)
+await makeDir(destinationPath)
+const isTorrent = checkIsTorrent(inputPath)
 const { torrentFileName, host, port } = isTorrent
-  ? await createTorrentServer(input, { verify: check, buffer, defaultPort })
+  ? await createTorrentServer(inputPath, {
+      verify: check,
+      buffer: bufferPath,
+      defaultPort,
+    })
   : {}
 
-const currentInput = isTorrent ? `${host}:${port}` : input
+const currentInput = isTorrent ? `${host}:${port}` : inputPath
 const fileName = torrentFileName || basename(currentInput)
 
 for (const range of ranges) {
@@ -75,7 +85,7 @@ for (const range of ranges) {
     new Trimmer({
       input: currentInput,
       range,
-      output: makeOutput(fileName, range, path),
+      output: makeOutput(fileName, range, destinationPath),
       log,
     }),
   )
