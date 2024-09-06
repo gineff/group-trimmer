@@ -14,6 +14,7 @@ import { Monitor } from './monitor.js'
 import { Controller } from './controller.js'
 
 program
+  .version('1.1.7', '-v, --vers', 'output the current version')
   .option('-i, --input <input>', 'video source')
   .option('-p, --path <path>', 'change destination path', './tmp')
   .option('-P, --port <port>', 'torrent server port', '8888')
