@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { program } from 'commander'
-import { resolve, basename, extname } from 'node:path'
+import { writeFile } from 'node:fs/promises'
+import { resolve, basename, extname, join } from 'node:path'
 import {
   createHash,
   makeDir,
@@ -14,7 +15,7 @@ import { Monitor } from './monitor.js'
 import { Controller } from './controller.js'
 
 program
-  .version('1.1.7', '-v, --vers', 'output the current version')
+  .version('1.1.8', '-v, --vers', 'output the current version')
   .option('-i, --input <input>', 'video source')
   .option('-p, --path <path>', 'change destination path', './tmp')
   .option('-P, --port <port>', 'torrent server port', '8888')
@@ -45,10 +46,8 @@ const inputPath = await checkAccess(resolve(__dirname, input))
 const bufferPath = buffer && (await checkAccess(resolve(__dirname, buffer)))
 const ranges = program.args.map(parseSegments)
 
-const makeOutput = (fileName, range, path) => {
-  const hash = createHash(fileName)
+const makeOutput = (hash, ext, range, path) => {
   const [startTime, duration] = range
-  const ext = extname(fileName) ?? '.mp4'
   return resolve(path, `${hash}-${startTime}-${duration}${ext}`)
 }
 
@@ -80,16 +79,21 @@ const { torrentFileName, host, port } = isTorrent
 
 const currentInput = isTorrent ? `${host}:${port}` : inputPath
 const fileName = torrentFileName || basename(currentInput)
+const hash = createHash(fileName)
+const ext = extname(fileName) ?? '.mp4'
 
 for (const range of ranges) {
   trimmers.push(
     new Trimmer({
       input: currentInput,
       range,
-      output: makeOutput(fileName, range, destinationPath),
+      output: makeOutput(hash, ext, range, destinationPath),
       log,
     }),
   )
 }
 new Monitor(trimmers)
 new Controller({ trimmers, retries, concurrentStreams: streams, timeout })
+
+const infoFilePath = join(destinationPath, `${hash}.info`)
+await writeFile(infoFilePath, `originalFileName=${fileName}`)
